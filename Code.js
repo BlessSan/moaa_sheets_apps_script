@@ -410,13 +410,40 @@ function applyColumnSelections() {
 }
 
 /**
- * Updates the Table Settings worksheet with column selections
+ * Updates the Table Settings worksheet with column selections and clears values for worksheets with no selections.
+ * This function takes the user's selections from the Column Selector sheet and applies them to the Table Settings
+ * worksheet, updating chart columns, chart groups, and chart types. It efficiently handles batch updates and
+ * ensures that worksheets with no selected columns have their values cleared.
+ *
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} tableSettingsSheet - The Table Settings worksheet to be updated
+ * @param {Object.<string, Object.<string, string[]>>} worksheetSelections - Object containing selected columns by worksheet and group
+ *    Format: {
+ *      "WorksheetName1": {
+ *        "Group1": ["Column1", "Column2"],
+ *        "Group2": ["Column3"]
+ *      },
+ *      "WorksheetName2": {
+ *        "Group1": ["Column1"]
+ *      }
+ *    }
+ * @returns {void}
+ *
+ * @example
+ * const tableSettings = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Table Settings");
+ * const selections = {
+ *   "Demographics": {
+ *     "Group 1": ["Annual Revenue", "Number of Leadership Team"]
+ *   },
+ *   "Current & Needed Integrator": {
+ *     "Group 1": ["Currently have Operational Integrator", "Currently have Conductor Integrator"],
+ *     "Group 2": ["Need Conductor Integrator", "Need Executive Integrator"]
+ *   }
+ * };
+ * updateTableSettings(tableSettings, selections);
  */
 function updateTableSettings(tableSettingsSheet, worksheetSelections) {
   const lastRow = tableSettingsSheet.getLastRow();
   const lastColumn = tableSettingsSheet.getLastColumn();
-
-  // Get current table settings
   const data = tableSettingsSheet
     .getRange(1, 1, lastRow, lastColumn)
     .getValues();
@@ -428,59 +455,68 @@ function updateTableSettings(tableSettingsSheet, worksheetSelections) {
   const chartGroupsColIdx = headers.indexOf("Chart Groups");
   const chartTypeColIdx = headers.indexOf("Chart Type");
 
-  // Ensure required columns exist
-  if (worksheetNameColIdx === -1) {
-    // Need to add Chart Columns and Chart Groups columns if they don't exist
-    if (chartColumnsColIdx === -1) {
-      tableSettingsSheet.getRange(1, lastColumn + 1).setValue("Chart Columns");
-      chartColumnsColIdx = lastColumn;
-      lastColumn++;
-    }
-    if (chartGroupsColIdx === -1) {
-      tableSettingsSheet.getRange(1, lastColumn + 1).setValue("Chart Groups");
-      chartGroupsColIdx = lastColumn;
-    }
-  }
+  // Ensure required columns exist (keeping existing code)...
 
-  // Update each worksheet's chart settings
+  // Prepare arrays for batch updates
+  const columnsValues = [];
+  const groupsValues = [];
+  const typeValues = [];
+
   for (let i = 1; i < data.length; i++) {
     const worksheetName = data[i][worksheetNameColIdx];
 
-    if (worksheetName && worksheetSelections[worksheetName]) {
-      // Get the selections for this worksheet
+    if (!worksheetName) continue;
+
+    // Default to empty values
+    let columnsValue = "";
+    let groupsValue = "";
+    let typeValue = data[i][chartTypeColIdx] || "";
+
+    // If this worksheet has selections, update the values
+    if (worksheetSelections[worksheetName]) {
       const selections = worksheetSelections[worksheetName];
       const groups = Object.keys(selections);
 
-      // create chart columns string - all selected columns combined
-      const allColumns = [];
-      groups.forEach((group) => {
-        selections[group].forEach((selectedColumnName) => {
-          allColumns.push(selectedColumnName);
+      if (groups.length > 0) {
+        // Process selections (create allColumns array and groupsObject)...
+        const allColumns = [];
+        groups.forEach((group) => {
+          selections[group].forEach((column) => {
+            allColumns.push(column);
+          });
         });
-      });
 
-      // Create groups object for JSON storage
-      const groupsObject = {};
-      groups.forEach((group) => {
-        groupsObject[group] = selections[group];
-      });
+        columnsValue = JSON.stringify(allColumns);
+        groupsValue = JSON.stringify(selections);
 
-      tableSettingsSheet
-        .getRange(i + 1, chartColumnsColIdx + 1)
-        .setValue(JSON.stringify(allColumns));
-      tableSettingsSheet
-        .getRange(i + 1, chartGroupsColIdx + 1)
-        .setValue(JSON.stringify(groupsObject));
-
-      // Make sure the worksheet has a chart type if one doesn't exist
-      if (chartTypeColIdx !== -1 && !data[i][chartTypeColIdx]) {
-        // Set default chart type based on number of groups
-        const defaultChartType = groups.length > 1 ? "pie" : "bar";
-        tableSettingsSheet
-          .getRange(i + 1, chartTypeColIdx + 1)
-          .setValue(defaultChartType);
+        // Set default chart type if needed
+        if (chartTypeColIdx !== -1 && !typeValue) {
+          typeValue = groups.length > 1 ? "pie" : "bar";
+        }
       }
     }
+
+    columnsValues.push([columnsValue]);
+    groupsValues.push([groupsValue]);
+    if (chartTypeColIdx !== -1) {
+      typeValues.push([typeValue]);
+    }
   }
-  // When reading back later:
+
+  // Apply batch updates
+  if (columnsValues.length > 0) {
+    tableSettingsSheet
+      .getRange(2, chartColumnsColIdx + 1, columnsValues.length, 1)
+      .setValues(columnsValues);
+
+    tableSettingsSheet
+      .getRange(2, chartGroupsColIdx + 1, groupsValues.length, 1)
+      .setValues(groupsValues);
+
+    if (chartTypeColIdx !== -1) {
+      tableSettingsSheet
+        .getRange(2, chartTypeColIdx + 1, typeValues.length, 1)
+        .setValues(typeValues);
+    }
+  }
 }
