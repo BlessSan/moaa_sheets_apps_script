@@ -147,8 +147,45 @@ function onOpen() {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu("MOAA Chart Tools")
     .addItem("Generate Column Selector", "generateColumnSelector")
-    .addItem("Apply Column Selector", "applyColumnSelections")
+    .addItem("Apply Column Selections", "applyColumnSelections")
+    .addSeparator()
+    .addItem("Check Column Changes", "showColumnChanges")
     .addToUi();
+}
+
+/**
+ * Shows column changes in a user-friendly dialog
+ */
+function showColumnChanges() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  // Only now run the potentially expensive operation
+  const changedWorksheets = detectColumnChanges(ss);
+  const ui = SpreadsheetApp.getUi();
+
+  if (changedWorksheets.length === 0) {
+    ui.alert(
+      "No Column Changes",
+      "All worksheets match their stored signatures. The Column Selector is up to date.",
+      ui.ButtonSet.OK
+    );
+  } else {
+    const response = ui.alert(
+      "Column Changes Detected",
+      `The following worksheets have column changes:\n\n${changedWorksheets.join(
+        ", "
+      )}\n\nWould you like to regenerate the Column Selector?`,
+      ui.ButtonSet.YES_NO
+    );
+
+    if (response === ui.Button.YES) {
+      generateColumnSelector();
+      ui.alert(
+        "Column Selector Updated",
+        "The Column Selector has been regenerated with the latest column structures.",
+        ui.ButtonSet.OK
+      );
+    }
+  }
 }
 
 /**
@@ -172,12 +209,7 @@ function generateColumnSelector() {
   const checkboxRanges = [];
   const validationRanges = [];
 
-  allData.push([
-    "Select columns to include in charts and assign them to groups. Then use 'Chart Tools > Apply Column Selections' to update settings.",
-    "",
-    "",
-    "",
-  ]);
+  allData.push(["", "", "", ""]);
 
   // Add header row
   allData.push([
@@ -230,7 +262,7 @@ function generateColumnSelector() {
   }
 
   // Apply merged cell for instructions
-  selectorSheet.getRange("A1:D1").merge().setFontStyle("italic");
+  setColumnSelectorHeader(selectorSheet, "generated");
 
   // Format header row
   selectorSheet.getRange("A2:D2").setFontWeight("bold");
@@ -293,6 +325,10 @@ function generateColumnSelector() {
     }
   }
 
+  storeColumnSignatures(ss);
+  // Add a timestamp to track when the selector was last updated
+  setColumnSelectorHeader(selectorSheet, "updated");
+
   // Final formatting
   selectorSheet.setFrozenRows(2); // Freeze both instruction and header rows
   selectorSheet.autoResizeColumns(1, 4);
@@ -302,7 +338,7 @@ function generateColumnSelector() {
  * Reads selections from Column Selector and updates Table Settings
  */
 function applyColumnSelections() {
-  ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
   const selectorSheet = ss.getSheetByName("Column Selector");
   const tableSettings = ss.getSheetByName("Table Settings");
 
@@ -311,6 +347,29 @@ function applyColumnSelections() {
       "Column Selector or Table Settings sheet not found"
     );
     return;
+  }
+
+  const changedWorksheets = detectColumnChanges(ss);
+
+  if (changedWorksheets.length > 0) {
+    const ui = SpreadsheetApp.getUi();
+    const response = ui.alert(
+      "Column Changes Detected",
+      `The following worksheets have column changes since the selector was generated:\n\n${changedWorksheets.join(
+        ", "
+      )}\n\nWould you like to regenerate the Column Selector before applying changes?`,
+      ui.ButtonSet.YES_NO
+    );
+
+    if (response === ui.Button.YES) {
+      generateColumnSelector();
+      ui.alert(
+        "Column Selector Updated",
+        "Please review and select columns again before applying changes.",
+        ui.ButtonSet.OK
+      );
+      return;
+    }
   }
 
   // Get all data from the selector sheet
@@ -344,6 +403,7 @@ function applyColumnSelections() {
   });
 
   updateTableSettings(tableSettings, worksheetSelections);
+  storeColumnSignatures(ss);
   SpreadsheetApp.getUi().alert("Column selections applied to Table Settings");
 }
 
@@ -421,24 +481,4 @@ function updateTableSettings(tableSettingsSheet, worksheetSelections) {
     }
   }
   // When reading back later:
-}
-
-function generateColumnSignature(sheet, columnNames = []) {
-  // Get column headers
-
-  if (columnNames.length === 0) {
-    columnNames = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  }
-
-  const signature = columnNames.filter((col) => col !== "");
-
-  // Create a string representation (e.g., column names joined with a delimiter)
-  return JSON.stringify(signature);
-}
-
-function storeColumnSignatures(signatures) {
-  PropertiesService.getScriptProperties().setProperty(
-    "columnSignatures",
-    JSON.stringify(signatures)
-  );
 }

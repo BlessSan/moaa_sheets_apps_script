@@ -423,3 +423,124 @@ function convertToCurrency(data, currencyColIndex = null) {
 
   return;
 }
+
+/**
+ * Generates a signature for a worksheet's columns
+ * @param {Sheet} sheet - The worksheet to generate signature for
+ * @param {string[]} columnNames - The names of columns to include in the signature
+ * @return {string} JSON string representing column structure
+ */
+function generateColumnSignature(sheet, columnNames = []) {
+  // Get column headers
+
+  if (columnNames.length === 0) {
+    columnNames = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  }
+
+  const signature = columnNames.filter((col) => col !== "");
+
+  // Create a string representation (e.g., column names joined with a delimiter)
+  return JSON.stringify(signature);
+}
+
+/**
+ * Stores column signatures for all relevant worksheets
+ * @param {Spreadsheet} sheet - The active spreadsheet
+ * @return {Object} The generated signatures object
+ */
+function storeColumnSignatures(sheet) {
+  const worksheetData = getWorksheetsList(sheet);
+  const signatures = {};
+
+  worksheetData.forEach((worksheetInfo) => {
+    const worksheetName = worksheetInfo.worksheetName;
+    const ws = sheet.getSheetByName(worksheetName);
+
+    if (ws) {
+      signatures[worksheetName] = generateColumnSignature(ws);
+    }
+  });
+
+  // Store in document properties (associated with this spreadsheet)
+  PropertiesService.getDocumentProperties().setProperty(
+    "columnSignatures",
+    JSON.stringify(signatures)
+  );
+
+  return signatures;
+}
+
+/**
+ * Retrieves stored column signatures
+ * @return {Object} The stored signatures object or empty object if none
+ */
+function getStoredColumnSignatures() {
+  try {
+    const signaturesJson =
+      PropertiesService.getDocumentProperties().getProperty("columnSignatures");
+    return signaturesJson ? JSON.parse(signaturesJson) : {};
+  } catch (e) {
+    console.error("Error retrieving column signatures:", e);
+    return {};
+  }
+}
+
+/**
+ * Checks if worksheet columns have changed since signatures were last stored
+ * @param {Spreadsheet} sheet - The active spreadsheet
+ * @return {Array} Names of worksheets with column changes
+ */
+function detectColumnChanges(sheet) {
+  const worksheetData = getWorksheetsList(sheet);
+  const storedSignatures = getStoredColumnSignatures();
+  const changedWorksheets = [];
+
+  worksheetData.forEach((worksheetInfo) => {
+    const worksheetName = worksheetInfo.worksheetName;
+    const ws = sheet.getSheetByName(worksheetName);
+
+    if (ws) {
+      const currentSignature = generateColumnSignature(ws);
+
+      if (
+        storedSignatures[worksheetName] &&
+        storedSignatures[worksheetName] !== currentSignature
+      ) {
+        changedWorksheets.push(worksheetName);
+      }
+    }
+  });
+
+  return changedWorksheets;
+}
+
+/**
+ * Sets the header message in the selector sheet
+ * @param {SpreadsheetApp.Sheet} selectorSheet - The selector sheet to update
+ * @param {string} [actionType="generated"] - Action description ("generated", "updated", etc.)
+ */
+function setColumnSelectorHeader(selectorSheet, actionType = "generated") {
+  selectorSheet.getRange("A1:D1").merge();
+  selectorSheet
+    .getRange("A1")
+    .setValue(
+      "Column Selector " +
+        actionType +
+        " on " +
+        new Date().toLocaleString() +
+        ". Select columns to include in charts and assign them to groups."
+    )
+    .setFontStyle("italic");
+}
+
+/**
+ * Resets stored column signatures (for troubleshooting)
+ */
+function resetColumnSignatures() {
+  PropertiesService.getDocumentProperties().deleteProperty("columnSignatures");
+  SpreadsheetApp.getUi().alert(
+    "Signatures Reset",
+    "Column signatures have been reset. Next checks will establish new baselines.",
+    SpreadsheetApp.getUi().ButtonSet.OK
+  );
+}
