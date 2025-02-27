@@ -192,10 +192,11 @@ function showColumnChanges() {
  * Generates a Column Selector worksheet with all columns from relevant worksheets
  */
 function generateColumnSelector() {
-  const signatures = {};
+  // Capture existing selections before regenerating
+  const savedSelections = captureColumnSelections();
+
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const worksheetData = getWorksheetsList(ss);
-
   // Create or clear the Column Selector sheet
   let selectorSheet = ss.getSheetByName("Column Selector");
   if (!selectorSheet) {
@@ -326,6 +327,7 @@ function generateColumnSelector() {
   }
 
   storeColumnSignatures(ss);
+  restoreColumnSelections(savedSelections);
   // Add a timestamp to track when the selector was last updated
   setColumnSelectorHeader(selectorSheet, "updated");
 

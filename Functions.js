@@ -544,3 +544,132 @@ function resetColumnSignatures() {
     SpreadsheetApp.getUi().ButtonSet.OK
   );
 }
+
+function captureColumnSelections() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const selectorSheet = ss.getSheetByName("Column Selector");
+  if (!selectorSheet) return {};
+
+  const lastRow = selectorSheet.getLastRow();
+  // Skip header rows
+  if (lastRow <= 2) return {};
+
+  // Get all data in one operation to minimize API calls
+  const data = selectorSheet.getRange(3, 1, lastRow - 2, 4).getValues();
+
+  const selections = {};
+
+  data.forEach((row) => {
+    const worksheet = row[0];
+    const column = row[1];
+    const isChecked = row[2];
+    const group = row[3];
+
+    // Skip empty rows
+    if (!worksheet || !column) return;
+
+    // Initialize nested objects if needed
+    if (!selections[worksheet]) {
+      selections[worksheet] = {};
+    }
+
+    selections[worksheet][column] = {
+      checked: Boolean(isChecked),
+      group: group || "",
+    };
+  });
+
+  // Store in document properties
+  PropertiesService.getDocumentProperties().setProperty(
+    "columnSelections",
+    JSON.stringify(selections)
+  );
+
+  return selections;
+}
+
+function restoreColumnSelections(savedSelections = null) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const selectorSheet = ss.getSheetByName("Column Selector");
+  if (!selectorSheet) return;
+
+  // If no selections passed, try to get from document properties
+  if (!savedSelections) {
+    try {
+      const selectionsJson =
+        PropertiesService.getDocumentProperties().getProperty(
+          "columnSelections"
+        );
+      if (!selectionsJson) return;
+      savedSelections = JSON.parse(selectionsJson);
+    } catch (e) {
+      console.error("Error retrieving saved selections:", e);
+      return;
+    }
+  }
+
+  // Get current selector data
+  const lastRow = selectorSheet.getLastRow();
+  if (lastRow <= 2) return; // Just header
+
+  const data = selectorSheet.getRange(3, 1, lastRow - 2, 4).getValues();
+
+  // Create ranges for batch updates
+  const checkboxUpdates = [];
+  const groupUpdates = [];
+
+  data.forEach((row, index) => {
+    const rowIndex = index + 3; // Adjust for header rows
+    const worksheet = row[0];
+    const column = row[1];
+
+    // Skip empty rows
+    if (!worksheet || !column) return;
+
+    // Check if we have saved selection for this worksheet/column
+    if (savedSelections[worksheet] && savedSelections[worksheet][column]) {
+      const selection = savedSelections[worksheet][column];
+
+      // Store checkbox updates for batch operations
+      if (selection.checked) {
+        checkboxUpdates.push(rowIndex);
+      }
+
+      // Store group values for batch updates
+      if (selection.group) {
+        groupUpdates.push({
+          row: rowIndex,
+          value: selection.group,
+        });
+      }
+    }
+  });
+
+  // Apply checkbox updates in batches
+  if (checkboxUpdates.length > 0) {
+    // We can update in continuous ranges for efficiency
+    let start = checkboxUpdates[0];
+    let end = checkboxUpdates[0];
+
+    for (let i = 1; i <= checkboxUpdates.length; i++) {
+      if (i === checkboxUpdates.length || checkboxUpdates[i] !== end + 1) {
+        // Update this range
+        selectorSheet.getRange(start, 3, end - start + 1, 1).check();
+
+        // Start new range if needed
+        if (i < checkboxUpdates.length) {
+          start = checkboxUpdates[i];
+          end = checkboxUpdates[i];
+        }
+      } else {
+        // Continue the range
+        end = checkboxUpdates[i];
+      }
+    }
+  }
+
+  // Apply group updates (need to set cell by cell for different values)
+  groupUpdates.forEach((update) => {
+    selectorSheet.getRange(update.row, 4).setValue(update.value);
+  });
+}
