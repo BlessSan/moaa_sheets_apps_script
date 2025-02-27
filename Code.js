@@ -155,8 +155,8 @@ function onOpen() {
  * Generates a Column Selector worksheet with all columns from relevant worksheets
  */
 function generateColumnSelector() {
+  const signatures = {};
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-
   const worksheetData = getWorksheetsList(ss);
 
   // Create or clear the Column Selector sheet
@@ -167,65 +167,135 @@ function generateColumnSelector() {
     selectorSheet.clear();
   }
 
-  // Set up header row
-  selectorSheet
-    .getRange("A1:D1")
-    .setValues([
-      ["Worksheet Name", "Column Name", "Include in Chart", "Chart Group"],
-    ]);
-  selectorSheet.getRange("A1:D1").setFontWeight("bold");
+  // Prepare all data in memory first
+  const allData = [];
+  const checkboxRanges = [];
+  const validationRanges = [];
 
-  let rowIndex = 2;
+  allData.push([
+    "Select columns to include in charts and assign them to groups. Then use 'Chart Tools > Apply Column Selections' to update settings.",
+    "",
+    "",
+    "",
+  ]);
+
+  // Add header row
+  allData.push([
+    "Worksheet Name",
+    "Column Name",
+    "Include in Chart",
+    "Chart Group",
+  ]);
+
+  let dataRowIndex = 2; // Starting index for data rows (after header)
+
   worksheetData.forEach((worksheet) => {
     const worksheetName = worksheet.worksheetName;
     const sheet = ss.getSheetByName(worksheetName);
     if (!sheet) return;
 
-    // Get column names (assuming they're in row 1)
-    const headerRange = sheet.getRange(1, 1, 1, sheet.getLastColumn());
-    const columnNames = headerRange.getValues()[0];
+    // Get column names
+    const columnNames = sheet
+      .getRange(1, 1, 1, sheet.getLastColumn())
+      .getValues()[0];
+
+    let addedRowsForWorksheet = false;
 
     columnNames.forEach((columnName, index) => {
-      if (columnName && index >> 0) {
+      if (columnName && index > 0) {
         // Skip first column assuming it's ID
+        // Add data row
+        allData.push([worksheetName, columnName, "", ""]);
 
-        // Add worksheet name, column name, and checkboxes
-        selectorSheet
-          .getRange(rowIndex, 1, 1, 2)
-          .setValues([[worksheetName, columnName]]);
+        // Track checkbox and validation ranges
+        // +2 because we have instruction row and header row
+        checkboxRanges.push(dataRowIndex + 2);
+        validationRanges.push(dataRowIndex + 2);
 
-        // Add checkbox for "Include in Chart"
-        selectorSheet.getRange(rowIndex, 3).insertCheckboxes();
-
-        // Add dropdown for "Chart Group"
-        const groups = ["Group 1", "Group 2", "Group 3", "Group 4", "Group 5"];
-        const validation = SpreadsheetApp.newDataValidation()
-          .requireValueInList(groups, true)
-          .build();
-        selectorSheet.getRange(rowIndex, 4).setDataValidation(validation);
-
-        rowIndex++;
+        dataRowIndex++;
+        addedRowsForWorksheet = true;
       }
     });
 
-    // Add a blank row between worksheets for readability
-    selectorSheet.getRange(rowIndex, 1).setValue("");
-    rowIndex++;
+    // Add blank row between worksheets for readability if we added rows
+    if (addedRowsForWorksheet) {
+      allData.push(["", "", "", ""]);
+      dataRowIndex++;
+    }
   });
 
-  // Format the sheet
-  selectorSheet.setFrozenRows(1);
-  selectorSheet.autoResizeColumns(1, 4);
+  // Write all data at once - more efficient than individual writes
+  if (allData.length > 0) {
+    selectorSheet.getRange(1, 1, allData.length, 4).setValues(allData);
+  }
 
-  // Add instructions at the top
-  selectorSheet.insertRowBefore(1);
-  selectorSheet.getRange("A1:D1").merge();
-  selectorSheet
-    .getRange("A1")
-    .setValue(
-      "Select columns to include in charts and assign them to groups. Then use 'Chart Tools > Apply Column Selections' to update settings."
-    );
-  selectorSheet.getRange("A1").setFontStyle("italic");
+  // Apply merged cell for instructions
+  selectorSheet.getRange("A1:D1").merge().setFontStyle("italic");
+
+  // Format header row
+  selectorSheet.getRange("A2:D2").setFontWeight("bold");
+
+  // Apply checkboxes for all "Include in Chart" cells in column C
+  // Note: We need to batch these by continuous ranges if possible
+  if (checkboxRanges.length > 0) {
+    // Find continuous ranges to minimize API calls
+    let currentStart = checkboxRanges[0];
+    let currentEnd = checkboxRanges[0];
+    for (let i = 1; i <= checkboxRanges.length; i++) {
+      // If we're at the end or found a discontinuity
+      if (i === checkboxRanges.length || checkboxRanges[i] !== currentEnd + 1) {
+        // Apply checkboxes to the continuous range
+        selectorSheet
+          .getRange(currentStart, 3, currentEnd - currentStart + 1, 1)
+          .insertCheckboxes();
+
+        // Start a new range if we're not at the end
+        if (i < checkboxRanges.length) {
+          currentStart = checkboxRanges[i];
+          currentEnd = checkboxRanges[i];
+        }
+      } else {
+        // Continue the current range
+        currentEnd = checkboxRanges[i];
+      }
+    }
+  }
+
+  if (validationRanges.length > 0) {
+    const groups = ["Group 1", "Group 2", "Group 3", "Group 4", "Group 5"];
+    const validation = SpreadsheetApp.newDataValidation()
+      .requireValueInList(groups, true)
+      .build();
+    // Apply validation in batches of continuous ranges
+    let currentStart = validationRanges[0];
+    let currentEnd = validationRanges[0];
+
+    for (let i = 1; i <= validationRanges.length; i++) {
+      // If we're at the end or found a discontinuity
+      if (
+        i === validationRanges.length ||
+        validationRanges[i] !== currentEnd + 1
+      ) {
+        // Apply validation to the continuous range
+        selectorSheet
+          .getRange(currentStart, 4, currentEnd - currentStart + 1, 1)
+          .setDataValidation(validation);
+
+        // Start a new range if we're not at the end
+        if (i < validationRanges.length) {
+          currentStart = validationRanges[i];
+          currentEnd = validationRanges[i];
+        }
+      } else {
+        // Continue the current range
+        currentEnd = validationRanges[i];
+      }
+    }
+  }
+
+  // Final formatting
+  selectorSheet.setFrozenRows(2); // Freeze both instruction and header rows
+  selectorSheet.autoResizeColumns(1, 4);
 }
 
 /**
@@ -351,4 +421,24 @@ function updateTableSettings(tableSettingsSheet, worksheetSelections) {
     }
   }
   // When reading back later:
+}
+
+function generateColumnSignature(sheet, columnNames = []) {
+  // Get column headers
+
+  if (columnNames.length === 0) {
+    columnNames = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  }
+
+  const signature = columnNames.filter((col) => col !== "");
+
+  // Create a string representation (e.g., column names joined with a delimiter)
+  return JSON.stringify(signature);
+}
+
+function storeColumnSignatures(signatures) {
+  PropertiesService.getScriptProperties().setProperty(
+    "columnSignatures",
+    JSON.stringify(signatures)
+  );
 }
