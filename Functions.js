@@ -102,13 +102,29 @@ function getWorksheetsData(sheet, id, worksheetList) {
           "workshop"
         );
 
-        worksheetsData.push({
+        let worksheetResult = {
           worksheet: worksheetName,
           type: worksheetType,
           isWorkshopTable: isWorkshopSheet,
           data: transformedData,
           columnsSummaryData: columnSummaryData,
-        });
+        };
+
+        if (id && worksheet.chartGroups) {
+          const chartData = generateChartData(
+            { data: transformedData, columnsSummaryData: columnSummaryData },
+            worksheet.chartType,
+            worksheet.chartGroups,
+            id
+          );
+
+          // Only add the chartData property if it was successfully generated
+          if (chartData) {
+            worksheetResult.chartData = chartData;
+          }
+        }
+
+        worksheetsData.push(worksheetResult);
       }
       // if there is no id, get only the first row
       else {
@@ -305,6 +321,9 @@ function getWorksheetsList(sheet) {
   const worksheetSettingsSheetName = "Table Settings";
   const worksheetNameColumn = "Worksheet Name";
   const typeColumn = "Type";
+  const chartTypeColumn = "Chart Type";
+  const chartColumnsColumn = "Chart Columns";
+  const chartGroupsColumn = "Chart Groups";
 
   var worksheetList = [];
   const ws = sheet.getSheetByName(worksheetSettingsSheetName);
@@ -320,11 +339,27 @@ function getWorksheetsList(sheet) {
   // range values will be a 2D array [column][row]
   const [columnNames, ...values] = range.getValues();
   const worksheetNameColumnPosition = columnNames.indexOf(worksheetNameColumn);
-  const worksheetTypeColumnPoisition = columnNames.indexOf(typeColumn);
+  const worksheetTypeColumnPosition = columnNames.indexOf(typeColumn);
+  const chartTypeColumnPosition = columnNames.indexOf(chartTypeColumn);
+  const chartColumnsColumnPosition = columnNames.indexOf(chartColumnsColumn);
+  const chartGroupsColumnPosition = columnNames.indexOf(chartGroupsColumn);
+
   for (let i = 0; i < values.length; i++) {
     worksheetList.push({
       worksheetName: values[i][worksheetNameColumnPosition],
-      type: values[i][worksheetTypeColumnPoisition],
+      type: values[i][worksheetTypeColumnPosition],
+      chartType:
+        chartTypeColumnPosition >= 0
+          ? values[i][chartTypeColumnPosition]
+          : null,
+      chartColumns:
+        chartColumnsColumnPosition >= 0
+          ? values[i][chartColumnsColumnPosition]
+          : null,
+      chartGroups:
+        chartGroupsColumnPosition >= 0
+          ? values[i][chartGroupsColumnPosition]
+          : null,
     });
   }
 
@@ -672,4 +707,121 @@ function restoreColumnSelections(savedSelections = null) {
   groupUpdates.forEach((update) => {
     selectorSheet.getRange(update.row, 4).setValue(update.value);
   });
+}
+
+/**
+ * Generates chart data for a worksheet based on chart settings
+ * @param {Object} worksheetData - The processed worksheet data object
+ * @param {string} chartType - Type of chart (pie, bar, etc.)
+ * @param {string} chartGroupsJSON - JSON string containing column groupings
+ * @param {string} workshopId - ID of the current workshop
+ * @return {Object|null} Chart data object or null if generation fails
+ */
+function generateChartData(
+  worksheetData,
+  chartType,
+  chartGroupsJSON,
+  workshopId
+) {
+  // Validate inputs
+  if (!worksheetData || !chartGroupsJSON) {
+    return null;
+  }
+
+  let chartGroups;
+  try {
+    chartGroups = JSON.parse(chartGroupsJSON);
+  } catch (e) {
+    console.error("Error parsing chart groups:", e);
+    return null;
+  }
+
+  // Initialize chart data structure
+  const chartData = {
+    type: chartType || "bar",
+    data: [],
+  };
+
+  // Get data sources
+  const aggregateRow = worksheetData.data[0];
+  const workshopData = worksheetData.columnsSummaryData;
+
+  // Process each chart group
+  Object.keys(chartGroups).forEach((groupName) => {
+    const columns = chartGroups[groupName];
+    if (!columns || columns.length === 0) return;
+
+    // Create data structure for this group
+    const groupData = {
+      labels: columns, // Column names become labels
+      datasets: [
+        {
+          label: "Aggregate",
+          data: [],
+        },
+        {
+          label: workshopId, // Will be replaced with workshop name in frontend
+          data: [],
+        },
+      ],
+    };
+
+    // Extract data for each column
+    columns.forEach((column) => {
+      // Check if column exists in data sources
+      if (
+        aggregateRow.hasOwnProperty(column) &&
+        workshopData.hasOwnProperty(column)
+      ) {
+        // Add aggregate data
+        groupData.datasets[0].data.push(
+          extractNumericValue(aggregateRow[column])
+        );
+
+        // Add workshop-specific data
+        groupData.datasets[1].data.push(
+          extractNumericValue(workshopData[column])
+        );
+      } else {
+        // Push 0 for missing columns
+        groupData.datasets[0].data.push(0);
+        groupData.datasets[1].data.push(0);
+        console.warn(`Column "${column}" not found in dataset`);
+      }
+    });
+
+    chartData.data.push(groupData);
+  });
+
+  return chartData;
+}
+
+/**
+ * Extracts numeric value from different data formats
+ * @param {any} value - The value to extract number from
+ * @return {number} The extracted numeric value
+ */
+function extractNumericValue(value) {
+  // Handle numeric values directly
+  if (typeof value === "number") return value;
+  if (!value) return 0;
+
+  // Handle string values
+  if (typeof value === "string") {
+    // Format: "X (Y%)" - extract X
+    const countMatch = value.match(/^(\d+)/);
+    if (countMatch) return parseFloat(countMatch[1]);
+
+    // Format: "$X,XXX.XX" - extract X,XXX.XX
+    const currencyMatch = value.match(/[\$]?([\d,]+(\.\d+)?)/);
+    if (currencyMatch) {
+      return parseFloat(currencyMatch[1].replace(/,/g, ""));
+    }
+
+    // Try direct number parsing
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue)) return numValue;
+  }
+
+  return 0;
 }
