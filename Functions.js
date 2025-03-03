@@ -803,7 +803,9 @@ function generateChartData(
  */
 function extractNumericValue(value) {
   // Handle numeric values directly
-  if (typeof value === "number") return value;
+  if (typeof value === "number" || !isNaN(parseFloat(value))) {
+    return parseFloat(parseFloat(value).toFixed(2));
+  }
   if (!value) return 0;
 
   // Handle string values
