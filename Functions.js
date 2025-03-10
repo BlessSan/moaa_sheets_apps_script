@@ -3,6 +3,11 @@ worksheets will be a list of object
 {
   worksheetName:string,
   type: "static" | "dynamic"
+  chartType: "bar" | "pie" 
+  chartColumns: [col1, col2, col3]
+  ChartGroups: {
+    groupName: [col1, col2, col3]
+  }
 }
 */
 function getWorksheetsData(sheet, id, worksheetList) {
@@ -23,10 +28,9 @@ function getWorksheetsData(sheet, id, worksheetList) {
     const ws = sheet.getSheetByName(worksheetName);
 
     const lastColumn = ws.getLastColumn();
-    const lastRow = ws.getLastRow();
 
-    const aVals = ws.getRange("A1:A" + lastRow).getValues();
-    const aLast = lastRow - aVals.reverse().findIndex((c) => c[0] != "");
+    // finds last row with data in column 1
+    const aLast = Utils.findLastRowWithData(ws, 1);
 
     const worksheetRange = ws.getRange(1, 1, aLast, lastColumn);
 
@@ -93,7 +97,7 @@ function getWorksheetsData(sheet, id, worksheetList) {
 
         if (currencyIndex) {
           //this function modifies the passed array, does not return new array
-          convertToCurrency(resultDataRow, currencyIndex);
+          Utils.formatCurrencyColumns(resultDataRow, currencyIndex);
         }
 
         const transformedData = transformData(
@@ -328,11 +332,9 @@ function getWorksheetsList(sheet) {
   var worksheetList = [];
   const ws = sheet.getSheetByName(worksheetSettingsSheetName);
   const lastColumn = ws.getLastColumn();
-  const lastRow = ws.getLastRow();
 
   //https://stackoverflow.com/questions/17632165/determining-the-last-row-in-a-single-column
-  const aVals = ws.getRange("A1:A" + lastRow).getValues();
-  const aLast = lastRow - aVals.reverse().findIndex((c) => c[0] != "");
+  const aLast = Utils.findLastRowWithData(ws, 1);
 
   const range = ws.getRange(1, 1, aLast, lastColumn);
 
@@ -377,11 +379,9 @@ function getWorkshopList(sheet) {
 
   const ws = sheet.getSheetByName(workshopListWorkSheetName);
   const lastColumn = ws.getLastColumn();
-  const lastRow = ws.getLastRow();
 
   //https://stackoverflow.com/questions/17632165/determining-the-last-row-in-a-single-column
-  const aVals = ws.getRange("A1:A" + lastRow).getValues();
-  const aLast = lastRow - aVals.reverse().findIndex((c) => c[0] != "");
+  const aLast = Utils.findLastRowWithData(ws, 1);
 
   const range = ws.getRange(1, 1, aLast, lastColumn);
 
@@ -411,11 +411,8 @@ function getPartnerList(sheet) {
 
   const ws = sheet.getSheetByName(partnerListWorkSheetName);
   const lastColumn = ws.getLastColumn();
-  const lastRow = ws.getLastRow();
 
-  //https://stackoverflow.com/questions/17632165/determining-the-last-row-in-a-single-column
-  const aVals = ws.getRange("A1:A" + lastRow).getValues();
-  const aLast = lastRow - aVals.reverse().findIndex((c) => c[0] != "");
+  const aLast = Utils.findLastRowWithData(ws, 1);
 
   const range = ws.getRange(1, 1, aLast, lastColumn);
 
@@ -433,30 +430,6 @@ function getPartnerList(sheet) {
   }
 
   return partnerList;
-}
-
-/**
- * converts cell values into currency
- * @param {string[][] | {string:string}} data - data to process, could be a 2D array or object of key value pair
- * @param {Number[]} colIndex - array containing the column's index which the value should be formatted
- */
-function convertToCurrency(data, currencyColIndex = null) {
-  const usCurrency = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  });
-
-  if (Array.isArray(data)) {
-    data.forEach(function (row, rowIndex, array) {
-      row.forEach(function (cell, colIndex) {
-        if (currencyColIndex && currencyColIndex.includes(colIndex)) {
-          array[rowIndex][colIndex] = usCurrency.format(parseInt(cell));
-        }
-      });
-    });
-  }
-
-  return;
 }
 
 /**
@@ -775,12 +748,12 @@ function generateChartData(
       ) {
         // Add aggregate data
         groupData.datasets[0].data.push(
-          extractNumericValue(aggregateRow[column])
+          Utils.extractNumericValue(aggregateRow[column])
         );
 
         // Add workshop-specific data
         groupData.datasets[1].data.push(
-          extractNumericValue(workshopData[column])
+          Utils.extractNumericValue(workshopData[column])
         );
       } else {
         // Push 0 for missing columns
@@ -794,36 +767,4 @@ function generateChartData(
   });
 
   return chartData;
-}
-
-/**
- * Extracts numeric value from different data formats
- * @param {any} value - The value to extract number from
- * @return {number} The extracted numeric value
- */
-function extractNumericValue(value) {
-  // Handle numeric values directly
-  if (typeof value === "number" || !isNaN(parseFloat(value))) {
-    return parseFloat(parseFloat(value).toFixed(2));
-  }
-  if (!value) return 0;
-
-  // Handle string values
-  if (typeof value === "string") {
-    // Format: "X (Y%)" - extract X
-    const countMatch = value.match(/^(\d+)/);
-    if (countMatch) return parseFloat(countMatch[1]);
-
-    // Format: "$X,XXX.XX" - extract X,XXX.XX
-    const currencyMatch = value.match(/[\$]?([\d,]+(\.\d+)?)/);
-    if (currencyMatch) {
-      return parseFloat(currencyMatch[1].replace(/,/g, ""));
-    }
-
-    // Try direct number parsing
-    const numValue = parseFloat(value);
-    if (!isNaN(numValue)) return numValue;
-  }
-
-  return 0;
 }
