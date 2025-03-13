@@ -14,9 +14,18 @@ var UIManager = (function () {
       "Chart Group",
     ],
     COLUMN_GROUPS: ["Group 1", "Group 2", "Group 3", "Group 4", "Group 5"],
-    BUTTON_SETS: {
-      OK: SpreadsheetApp.getUi().ButtonSet.OK,
-      YES_NO: SpreadsheetApp.getUi().ButtonSet.YES_NO,
+    BUTTON_TYPES: {
+      OK: "OK",
+      YES_NO: "YES_NO",
+      YES_NO_CANCEL: "YES_NO_CANCEL",
+      OK_CANCEL: "OK_CANCEL",
+    },
+    // Alert types for consistent messaging
+    ALERT_TYPES: {
+      INFO: "INFO",
+      WARNING: "WARNING",
+      ERROR: "ERROR",
+      SUCCESS: "SUCCESS",
     },
   };
 
@@ -34,15 +43,50 @@ var UIManager = (function () {
   }
 
   /**
+   * Gets the appropriate ButtonSet based on string type
+   * @param {string} buttonType - Type from CONSTANTS.BUTTON_TYPES
+   * @return {GoogleAppsScript.Base.ButtonSet} The ButtonSet object
+   */
+  function getButtonSet(buttonType) {
+    const ui = SpreadsheetApp.getUi();
+    switch (buttonType) {
+      case CONSTANTS.BUTTON_TYPES.YES_NO:
+        return ui.ButtonSet.YES_NO;
+      case CONSTANTS.BUTTON_TYPES.YES_NO_CANCEL:
+        return ui.ButtonSet.YES_NO_CANCEL;
+      case CONSTANTS.BUTTON_TYPES.OK_CANCEL:
+        return ui.ButtonSet.OK_CANCEL;
+      case CONSTANTS.BUTTON_TYPES.OK:
+      default:
+        return ui.ButtonSet.OK;
+    }
+  }
+
+  /**
    * Shows UI alert with custom message
    * @param {string} title - Alert title
    * @param {string} message - Alert message
-   * @param {GoogleAppsScript.Base.ButtonSet} [buttonSet=ButtonSet.OK] - Button options
+   * @param {string} [buttonType=CONSTANTS.BUTTON_TYPES.OK] - Button type from CONSTANTS.BUTTON_TYPES
+   * @param {string} [alertType=CONSTANTS.ALERT_TYPES.INFO] - Alert type from CONSTANTS.ALERT_TYPES
    * @return {GoogleAppsScript.Base.Button} Button that was clicked
    */
-  function showAlert(title, message, buttonSet = CONSTANTS.BUTTON_SETS.OK) {
+  function showAlert(
+    title,
+    message,
+    buttonType = CONSTANTS.BUTTON_TYPES.OK,
+    alertType = CONSTANTS.ALERT_TYPES.INFO
+  ) {
     const ui = SpreadsheetApp.getUi();
-    return ui.alert(title, message, buttonSet);
+    const buttonSet = getButtonSet(buttonType);
+
+    // Optionally format message based on alertType
+    let formattedMessage = message;
+    if (alertType === CONSTANTS.ALERT_TYPES.ERROR) {
+      formattedMessage = "ERROR: " + message;
+      // Could add more formatting if Apps Script supported HTML in alerts
+    }
+
+    return ui.alert(title, formattedMessage, buttonSet);
   }
 
   /**
@@ -55,20 +99,20 @@ var UIManager = (function () {
       showAlert(
         "No Column Changes",
         "All worksheets match their stored signatures. The Column Selector is up to date.",
-        CONSTANTS.BUTTON_SETS.OK
+        CONSTANTS.BUTTON_TYPES.OK
       );
       return false;
     }
 
-    const ui = SpreadsheetApp.getUi();
-    const response = ui.alert(
+    const response = showAlert(
       "Column Changes Detected",
       `The following worksheets have column changes:\n\n${changedWorksheets.join(
         ", "
       )}\n\nWould you like to regenerate the Column Selector?`,
-      CONSTANTS.BUTTON_SETS.YES_NO
+      CONSTANTS.BUTTON_TYPES.YES_NO
     );
 
+    const ui = SpreadsheetApp.getUi();
     return response === ui.Button.YES;
   }
 
@@ -274,7 +318,7 @@ var UIManager = (function () {
       showAlert(
         "Column Selector Updated",
         "The Column Selector has been regenerated with the latest column structures.",
-        CONSTANTS.BUTTON_SETS.OK
+        CONSTANTS.BUTTON_TYPES.OK
       );
     }
   }
@@ -342,7 +386,7 @@ var UIManager = (function () {
       showAlert(
         "Missing Columns",
         "Required columns not found in Table Settings sheet.",
-        CONSTANTS.BUTTON_SETS.OK
+        CONSTANTS.BUTTON_TYPES.OK
       );
       return;
     }
@@ -433,7 +477,7 @@ var UIManager = (function () {
       showAlert(
         "Missing Sheets",
         "Column Selector or Table Settings sheet not found",
-        CONSTANTS.BUTTON_SETS.OK
+        CONSTANTS.BUTTON_TYPES.OK
       );
       return;
     }
@@ -442,13 +486,12 @@ var UIManager = (function () {
     const changedWorksheets = ConfigManager.detectColumnChanges(ss);
 
     if (changedWorksheets.length > 0) {
-      const ui = SpreadsheetApp.getUi();
-      const response = ui.alert(
+      const response = showAlert(
         "Column Changes Detected",
         `The following worksheets have column changes since the selector was generated:\n\n${changedWorksheets.join(
           ", "
         )}\n\nWould you like to regenerate the Column Selector before applying changes?`,
-        CONSTANTS.BUTTON_SETS.YES_NO
+        CONSTANTS.BUTTON_TYPES.YES_NO
       );
 
       if (response === ui.Button.YES) {
@@ -456,7 +499,7 @@ var UIManager = (function () {
         showAlert(
           "Column Selector Updated",
           "Please review and select columns again before applying changes.",
-          CONSTANTS.BUTTON_SETS.OK
+          CONSTANTS.BUTTON_TYPES.OK
         );
         return;
       }
@@ -504,7 +547,7 @@ var UIManager = (function () {
     showAlert(
       "Success",
       "Column selections applied to Table Settings",
-      CONSTANTS.BUTTON_SETS.OK
+      CONSTANTS.BUTTON_TYPES.OK
     );
   }
 
