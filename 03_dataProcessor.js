@@ -30,14 +30,14 @@ var DataProcessor = (function () {
    * Transforms raw 2D array data into array of objects with named properties
    * @param {string[]} columns - Column names (headers)
    * @param {Array<Array>} values - 2D array of values
-   * @param {string} type - Data type (e.g., "workshop" to skip ID column)
+   * @param {string} type - Data type (e.g., "dynamic" to skip ID column)
    * @return {Array<Object>} Array of objects with column names as keys
    */
-  function transformData(columns, values, type) {
+  function transformData(columns, values, type = "dynamic") {
     if (!columns || !values || values.length === 0) return [];
 
     const result = [];
-    const colStart = type === "workshop" ? 1 : 0;
+    const colStart = type === "dynamic" ? 1 : 0;
 
     for (let row = 0; row < values.length; row++) {
       const resultObj = {};

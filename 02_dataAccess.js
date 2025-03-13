@@ -63,7 +63,7 @@ var DataAccess = (function () {
    * @property {string[]} headers - Array of header values
    * @property {Array<Array>} data - 2D array of data values
    */
-  function getSheetData(sheet, includeHeaders = true) {
+  function getSheetData(sheet, includeHeaders = false) {
     const numColumns = sheet.getLastColumn();
     const numRows = Utils.getLastRowWithContent(sheet, 1);
 
@@ -117,9 +117,8 @@ var DataAccess = (function () {
       return [];
     }
 
-    // Skip header row
     const worksheets = [];
-    for (let i = 1; i < data.length; i++) {
+    for (let i = 0; i < data.length; i++) {
       const row = data[i];
       if (!row[worksheetNameIdx]) continue;
 
@@ -169,9 +168,8 @@ var DataAccess = (function () {
       return [];
     }
 
-    // Skip header row
     const workshops = [];
-    for (let i = 1; i < data.length; i++) {
+    for (let i = 0; i < data.length; i++) {
       const row = data[i];
       if (!row[idIdx]) continue;
 
@@ -213,7 +211,7 @@ var DataAccess = (function () {
 
     // Skip header row
     const partners = [];
-    for (let i = 1; i < data.length; i++) {
+    for (let i = 0; i < data.length; i++) {
       const row = data[i];
       if (!row[idIdx]) continue;
 

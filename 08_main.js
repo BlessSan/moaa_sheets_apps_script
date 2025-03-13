@@ -45,9 +45,6 @@ function doGet(request) {
       case ACTION_TYPES.GET_WORKSHOP_RESULTS:
         // Return data for a specific workshop
         const workshopId = params.workshop_id;
-        if (!workshopId) {
-          throw new Error("Missing workshop_id parameter");
-        }
 
         const worksheetsList = DataAccess.getWorksheetsList(spreadsheet);
         const worksheetsData = WorksheetService.getWorksheetsData(
@@ -84,11 +81,7 @@ function doGet(request) {
  * Runs when the spreadsheet is opened, setting up the custom menu
  */
 function onOpen() {
-  // Initialize all modules
-  ServiceLocator.initializeAll();
-
   // Create UI menu
-  var UIManager = ServiceLocator.get("UIManager");
   UIManager.createCustomMenu();
 }
 
