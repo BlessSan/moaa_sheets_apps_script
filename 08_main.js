@@ -1,6 +1,18 @@
 /**
  * Main Module for MOAA Chart Tools
- * Entry point for HTTP requests and application initialization
+ *
+ * Purpose: Entry point for HTTP requests and application initialization
+ *
+ * Dependencies:
+ * - WorksheetService: For data operations
+ * - UIManager: For user interface operations
+ * - DataAccess: For spreadsheet access
+ *
+ * Dependent Modules: None (top-level module)
+ *
+ * Initialization Order: Should be loaded last
+ *
+ * Note: Contains global functions doGet() and onOpen() as entry points
  */
 
 // Action constants for HTTP requests
@@ -72,6 +84,11 @@ function doGet(request) {
  * Runs when the spreadsheet is opened, setting up the custom menu
  */
 function onOpen() {
+  // Initialize all modules
+  ServiceLocator.initializeAll();
+
+  // Create UI menu
+  var UIManager = ServiceLocator.get("UIManager");
   UIManager.createCustomMenu();
 }
 

@@ -1,6 +1,15 @@
 /**
  * Data Processing Module for MOAA Chart Tools
- * Handles transformation of raw spreadsheet data into structured formats
+ *
+ * Purpose: Handles transformation of raw spreadsheet data into structured formats
+ *
+ * Dependencies:
+ * - Utils: For data formatting and number extraction
+ *
+ * Dependent Modules:
+ * - WorksheetService: For data transformation
+ *
+ * Initialization Order: Should be loaded after Utils
  */
 var DataProcessor = (function () {
   // Constants for data processing

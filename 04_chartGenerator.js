@@ -1,6 +1,15 @@
 /**
  * Chart Generator Module for MOAA Chart Tools
- * Handles creation of chart data structures for visualization
+ *
+ * Purpose: Handles creation of chart data structures for visualization
+ *
+ * Dependencies:
+ * - Utils: For number extraction and formatting
+ *
+ * Dependent Modules:
+ * - WorksheetService: For chart data generation
+ *
+ * Initialization Order: Should be loaded after Utils
  */
 var ChartGenerator = (function () {
   // Constants for chart generation

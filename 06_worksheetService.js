@@ -1,6 +1,18 @@
 /**
  * Worksheet Service Module for MOAA Chart Tools
- * Orchestrates worksheet data processing and chart generation
+ *
+ * Purpose: Orchestrates worksheet data processing and chart generation
+ *
+ * Dependencies:
+ * - DataProcessor: For data transformation
+ * - ChartGenerator: For chart data creation
+ * - DataAccess: For spreadsheet data access
+ *
+ * Dependent Modules:
+ * - main.js: For HTTP request handling
+ * - UIManager: For worksheet operations
+ *
+ * Initialization Order: Should be loaded after its dependencies
  */
 var WorksheetService = (function () {
   // Constants for worksheet processing

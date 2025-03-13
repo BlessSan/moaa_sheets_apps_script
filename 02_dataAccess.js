@@ -1,6 +1,17 @@
 /**
  * Data Access Module for MOAA Chart Tools
- * Handles all direct interactions with Google Sheets
+ *
+ * Purpose: Handles all direct interactions with Google Sheets
+ *
+ * Dependencies:
+ * - Utils: For data formatting and error handling
+ *
+ * Dependent Modules:
+ * - ConfigManager: For accessing spreadsheet data
+ * - WorksheetService: For data retrieval
+ * - UIManager: For accessing spreadsheet data
+ *
+ * Initialization Order: Should be loaded after Utils
  */
 var DataAccess = (function () {
   // Constants for common sheet and column names
@@ -47,7 +58,10 @@ var DataAccess = (function () {
    * Gets full data range from a sheet
    * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet - Sheet to get data from
    * @param {boolean} [includeHeaders=true] - Whether to include headers in the result
-   * @return {Object} Object with headers array and data array
+   * @return {SheetData} Object with headers array and data array
+   * @typedef {Object} SheetData
+   * @property {string[]} headers - Array of header values
+   * @property {Array<Array>} data - 2D array of data values
    */
   function getSheetData(sheet, includeHeaders = true) {
     const numColumns = sheet.getLastColumn();
@@ -69,7 +83,13 @@ var DataAccess = (function () {
   /**
    * Gets list of worksheet configurations from Table Settings
    * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} [ss] - Spreadsheet (uses active if not provided)
-   * @return {Array<Object>} Array of worksheet configuration objects
+   * @return {Array<WorksheetConfig>} Array of worksheet configuration objects
+   * @typedef {Object} WorksheetConfig
+   * @property {string} worksheetName - Name of the worksheet
+   * @property {string} type - Type of worksheet (static, dynamic)
+   * @property {string} [chartType] - Type of chart to generate
+   * @property {string} [chartColumns] - Columns to use for chart data
+   * @property {string} [chartGroups] - Columns to use for chart groups
    */
   function getWorksheetsList(ss) {
     if (!ss) ss = getActiveSpreadsheet();

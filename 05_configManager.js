@@ -1,6 +1,15 @@
 /**
  * Configuration Manager Module for MOAA Chart Tools
- * Handles storage and retrieval of application state and configuration
+ *
+ * Purpose: Handles storage and retrieval of application state and configuration
+ *
+ * Dependencies:
+ * - DataAccess: For accessing spreadsheet data
+ *
+ * Dependent Modules:
+ * - UIManager: For managing column selections
+ *
+ * Initialization Order: Should be loaded after DataAccess
  */
 var ConfigManager = (function () {
   // Constants for property keys and configuration

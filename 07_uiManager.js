@@ -1,6 +1,20 @@
 /**
  * UI Manager Module for MOAA Chart Tools
- * Handles user interface interactions and sheet UI updates
+ *
+ * Purpose: Handles user interface interactions and sheet UI updates
+ *
+ * Dependencies:
+ * - DataAccess: For spreadsheet operations
+ * - ConfigManager: For managing column selections
+ * - WorksheetService: For data operations
+ *
+ * Dependent Modules:
+ * - Global UI functions: For menu operations
+ * - main.js: For onOpen handler
+ *
+ * Initialization Order: Should be loaded after all other modules
+ *
+ * Note: Provides global functions for UI menu callbacks
  */
 var UIManager = (function () {
   // Constants for UI elements

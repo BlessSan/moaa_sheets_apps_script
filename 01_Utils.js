@@ -1,6 +1,18 @@
 /**
- * Utilities Module
- * Provides common helper functions for the application
+ * Utilities Module for MOAA Chart Tools
+ *
+ * Purpose: Provides common helper functions for the application
+ *
+ * Dependencies: None
+ *
+ * Dependent Modules:
+ * - DataProcessor: For number formatting and data extraction
+ * - ChartGenerator: For data formatting
+ * - DataAccess: For helper utilities
+ * - WorksheetService: Indirectly via other modules
+ * - UIManager: Indirectly via other modules
+ *
+ * Initialization Order: Should be loaded after ServiceLocator
  */
 var Utils = (function () {
   /**
@@ -103,7 +115,7 @@ var Utils = (function () {
    * @param {number} column - Column index (1-based)
    * @return {number} The last non-empty row
    */
-  function findLastRowWithData(sheet, column = 1) {
+  function getLastRowWithContent(sheet, column = 1) {
     const values = sheet.getRange(1, column, sheet.getMaxRows(), 1).getValues();
     for (let i = values.length - 1; i >= 0; i--) {
       if (values[i][0] !== "") {
@@ -146,7 +158,7 @@ var Utils = (function () {
     formatCurrency: formatCurrency,
     formatCurrencyColumns: formatCurrencyColumns,
     extractNumericValue: extractNumericValue,
-    findLastRowWithData: findLastRowWithData,
+    getLastRowWithContent: getLastRowWithContent,
     logError: logError,
     safeExecute: safeExecute,
   };
