@@ -42,6 +42,11 @@ var UIManager = (function () {
       .addToUi();
   }
 
+  function isButtonYes(response) {
+    const ui = SpreadsheetApp.getUi();
+    return response === ui.Button.YES;
+  }
+
   /**
    * Gets the appropriate ButtonSet based on string type
    * @param {string} buttonType - Type from CONSTANTS.BUTTON_TYPES
@@ -68,7 +73,7 @@ var UIManager = (function () {
    * @param {string} message - Alert message
    * @param {string} [buttonType=CONSTANTS.BUTTON_TYPES.OK] - Button type from CONSTANTS.BUTTON_TYPES
    * @param {string} [alertType=CONSTANTS.ALERT_TYPES.INFO] - Alert type from CONSTANTS.ALERT_TYPES
-   * @return {GoogleAppsScript.Base.Button} Button that was clicked
+   * @return {GoogleAppsScript.Base.Button | null} Button that was clicked
    */
   function showAlert(
     title,
@@ -76,17 +81,16 @@ var UIManager = (function () {
     buttonType = CONSTANTS.BUTTON_TYPES.OK,
     alertType = CONSTANTS.ALERT_TYPES.INFO
   ) {
-    const ui = SpreadsheetApp.getUi();
-    const buttonSet = getButtonSet(buttonType);
-
-    // Optionally format message based on alertType
-    let formattedMessage = message;
-    if (alertType === CONSTANTS.ALERT_TYPES.ERROR) {
-      formattedMessage = "ERROR: " + message;
-      // Could add more formatting if Apps Script supported HTML in alerts
+    try {
+      const ui = SpreadsheetApp.getUi();
+      const buttonSet = getButtonSet(buttonType);
+      // Optionally format message based on alertType
+      let formattedMessage = message;
+      return ui.alert(title, formattedMessage, buttonSet);
+    } catch (error) {
+      console.error("Error in showAlert:", error);
+      return null;
     }
-
-    return ui.alert(title, formattedMessage, buttonSet);
   }
 
   /**
@@ -112,8 +116,7 @@ var UIManager = (function () {
       CONSTANTS.BUTTON_TYPES.YES_NO
     );
 
-    const ui = SpreadsheetApp.getUi();
-    return response === ui.Button.YES;
+    return isButtonYes(response);
   }
 
   /**
@@ -494,7 +497,7 @@ var UIManager = (function () {
         CONSTANTS.BUTTON_TYPES.YES_NO
       );
 
-      if (response === ui.Button.YES) {
+      if (isButtonYes(response)) {
         generateColumnSelector();
         showAlert(
           "Column Selector Updated",
@@ -563,15 +566,14 @@ var UIManager = (function () {
   };
 })();
 
-// These functions must be globally accessible for the menu to work
-function generateColumnSelector() {
-  UIManager.generateColumnSelector();
+// Expose functions directly or with a factory
+function getGlobalFunctions() {
+  return {
+    generateColumnSelector: UIManager.generateColumnSelector,
+    applyColumnSelections: UIManager.applyColumnSelections,
+    showColumnChanges: UIManager.showColumnChanges,
+  };
 }
 
-function applyColumnSelections() {
-  UIManager.applyColumnSelections();
-}
-
-function showColumnChanges() {
-  UIManager.showColumnChanges();
-}
+// Then use reflection to create globals
+Object.assign(this, getGlobalFunctions());
