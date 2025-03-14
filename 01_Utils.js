@@ -84,13 +84,11 @@ var Utils = (function () {
    */
   function extractNumericValue(value) {
     // Handle numeric values directly
-    if (typeof value === "number" || !isNaN(parseFloat(value))) {
-      return parseFloat(parseFloat(value).toFixed(2));
+    if (typeof value === "number" || !isNaN(value)) {
+      return Number(parseFloat(value).toFixed(2));
     }
-    if (!value) return 0;
-
     // Handle string values
-    if (typeof value === "string") {
+    else if (typeof value === "string") {
       // Format: "X (Y%)" - extract X
       const countMatch = value.match(/^(\d+)/);
       if (countMatch) return parseFloat(countMatch[1]);
@@ -102,7 +100,7 @@ var Utils = (function () {
       }
 
       // Try direct number parsing
-      const numValue = parseFloat(value);
+      const numValue = parseFloat(value).toFixed(2);
       if (!isNaN(numValue)) return numValue;
     }
 
