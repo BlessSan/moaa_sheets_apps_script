@@ -200,6 +200,14 @@ var DataProcessor = (function () {
       // details: though spread operator creates a shallow copy, it is enough for this use case since aggregateRow is modified in a way that its primitive value changes, therefore does not affect the original data array
       const aggregateRow = [...data[0]];
 
+      // Format numeric values for consistent precision
+      for (let i = 0; i < aggregateRow.length; i++) {
+        const value = aggregateRow[i];
+        if (value !== "" && !isNaN(value)) {
+          aggregateRow[i] = value.toFixed(CONSTANTS.FORMAT_PRECISION);
+        }
+      }
+
       // Format currency values
       if (currencyColIndices.length > 0) {
         Utils.formatCurrencyColumns([aggregateRow], currencyColIndices);
