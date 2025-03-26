@@ -88,10 +88,12 @@ var ChartGenerator = (function () {
           {
             label: CONSTANTS.AGGREGATE_LABEL,
             data: [],
+            customLabels: [],
           },
           {
             label: workshopId,
             data: [],
+            customLabels: [],
           },
         ],
       };
@@ -104,26 +106,82 @@ var ChartGenerator = (function () {
           workshopData.hasOwnProperty(column)
         ) {
           // Add aggregate data
+          const aggregateDataPoint = aggregateRow[column];
           groupData.datasets[0].data.push(
-            Utils.extractNumericValue(aggregateRow[column])
+            Utils.extractNumericValue(aggregateDataPoint)
           );
+          groupData.datasets[0].customLabels.push(aggregateDataPoint);
 
           // Add workshop-specific data
+          const workshopDataPoint = workshopData[column];
           groupData.datasets[1].data.push(
-            Utils.extractNumericValue(workshopData[column])
+            Utils.extractNumericValue(workshopDataPoint)
           );
+          groupData.datasets[1].customLabels.push(workshopDataPoint);
         } else {
           // Push default value for missing columns
           groupData.datasets[0].data.push(CONSTANTS.FALLBACK_VALUE);
+          groupData.datasets[0].customLabels.push(CONSTANTS.FALLBACK_VALUE);
           groupData.datasets[1].data.push(CONSTANTS.FALLBACK_VALUE);
+          groupData.datasets[1].customLabels.push(CONSTANTS.FALLBACK_VALUE);
           console.warn(`Column "${column}" not found in dataset`);
         }
       });
+
+      // Special handling for single data points in pie charts
+      //! IMPORTANT NOTE: This implementation assumes that pie chart will always handle data with format of X (Y%)
+      if (columns.length === 1 && chartType === CONSTANTS.CHART_TYPES.PIE) {
+        // add datapoint for remainder values in Others category
+
+        //try to extract value for custom format of X (Y%)
+        const extractedAggregateValue = Utils.extractCustomFormatValue(
+          aggregateRow[columns[0]]
+        );
+        const extractedWorkshopValue = Utils.extractCustomFormatValue(
+          workshopData[columns[0]]
+        );
+        if (
+          extractedAggregateValue !== null &&
+          extractedWorkshopValue !== null
+        ) {
+          // add Others category
+          columns.push("Others");
+          const aggregateRemainder = getRemainderValue(extractedAggregateValue);
+          const workshopRemainder = getRemainderValue(extractedWorkshopValue);
+
+          groupData.datasets[0].data.push(aggregateRemainder.x);
+          groupData.datasets[0].customLabels.push(
+            `${aggregateRemainder.x} (${aggregateRemainder.y}%)`
+          );
+
+          groupData.datasets[1].data.push(workshopRemainder.x);
+          groupData.datasets[1].customLabels.push(
+            `${workshopRemainder.x} (${workshopRemainder.y}%)`
+          );
+        }
+      }
 
       chartData.data.push(groupData);
     });
 
     return chartData;
+  }
+
+  /**
+   * @description Gets the remainder value for a pie chart with format of X (Y%)
+   *
+   * Assumes that `x` and `y` are numeric, and `y` represents a percentage value.
+   *
+   * NOTE: This function could be more complete with handling remainder values of different formats
+   * @typedef {Object} ExtractedNumbers
+   * @property {number} x - The extracted value X
+   * @property {number} y - The extracted percentage Y
+   * @param {ExtractedNumbers} data - Data object for the chart
+   * @return {ExtractedNumbers} Remainder value x and its percentage y
+   */
+  function getRemainderValue({ x, y }) {
+    const remainder = (x * 100) / y - x;
+    return { x: Math.round(remainder), y: parseFloat((100 - y).toFixed(2)) };
   }
 
   /**

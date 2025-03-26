@@ -124,6 +124,27 @@ var Utils = (function () {
   }
 
   /**
+   * Extract value for custom format of X (Y%)
+   * @typedef {Object} ExtractedNumbers
+   * @property {number} x - The extracted value X
+   * @property {number} y - The extracted percentage Y
+   * @param {string} value - The value to extract from
+   * @return {ExtractedNumbers|null} The extracted numbers or null if not found
+   */
+  function extractCustomFormatValue(value) {
+    const regex =
+      /(\d+(?:,\d{3})*)(?:\.\d+)?\s*\((\d+(?:,\d{3})*(?:\.\d+)?)%\)/;
+
+    const match = value.match(regex);
+    if (match) {
+      const x = parseInt(match[1].replace(/,/g, ""), 10);
+      const y = parseFloat(match[2].replace(/,/g, ""));
+      return { x: x, y: y };
+    }
+    return null;
+  }
+
+  /**
    * Logs errors with consistent formatting
    * @param {string} source - Source of the error (function name)
    * @param {Error|string} error - The error object or message
@@ -157,6 +178,7 @@ var Utils = (function () {
     formatCurrencyColumns: formatCurrencyColumns,
     extractNumericValue: extractNumericValue,
     getLastRowWithContent: getLastRowWithContent,
+    extractCustomFormatValue: extractCustomFormatValue,
     logError: logError,
     safeExecute: safeExecute,
   };
