@@ -75,11 +75,12 @@ var WorksheetService = (function () {
       worksheetConfig.type || CONSTANTS.DEFAULT_WORKSHEET_TYPE;
 
     // Get the worksheet
-    const sheet = DataAccess.getSheetByName(worksheetName, spreadsheet);
-    if (!sheet) {
-      console.error(`Worksheet ${worksheetName} not found`);
-      return null;
-    }
+    // TODO: evalute if this is necessary. It only checks if the sheet exists but adds additional read operations
+    // const sheet = DataAccess.getSheetByName(worksheetName, spreadsheet);
+    // if (!sheet) {
+    //   console.error(`Worksheet ${worksheetName} not found`);
+    //   return null;
+    // }
 
     // Get raw worksheet data
     const rawData = DataAccess.getWorksheetData(
@@ -130,6 +131,7 @@ var WorksheetService = (function () {
   ) {
     const chartType = worksheetConfig.chartType || CONSTANTS.DEFAULT_CHART_TYPE;
     const chartGroups = worksheetConfig.chartGroups;
+    const chartTitle = worksheetConfig.chartTitle;
 
     if (!chartGroups) {
       return null;
@@ -137,12 +139,14 @@ var WorksheetService = (function () {
 
     return ChartGenerator.generateChartData(
       processedData,
+      chartTitle,
       chartType,
       chartGroups,
       workshopId
     );
   }
 
+  //TODO: evalue if this function is necessary, seem to be unsed now
   /**
    * Gets processed data for a single worksheet
    * @param {string} worksheetName - Name of the worksheet
@@ -198,7 +202,6 @@ var WorksheetService = (function () {
     getWorksheetsData: getWorksheetsData,
     processWorksheetWithFilter: processWorksheetWithFilter,
     prepareChartDataForWorksheet: prepareChartDataForWorksheet,
-    getWorksheetData: getWorksheetData,
     getWorksheetsSummary: getWorksheetsSummary,
   };
 })();

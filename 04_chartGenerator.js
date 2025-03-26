@@ -32,6 +32,7 @@ var ChartGenerator = (function () {
   /**
    * Generates chart data structure for visualization
    * @param {Object} worksheetData - Processed worksheet data
+   * @param {string} chartTitle - Title of the chart
    * @param {string} chartType - Type of chart (bar, pie, line, etc.)
    * @param {string} chartGroupsJSON - JSON string of column groupings
    * @param {string} workshopId - ID of the current workshop
@@ -39,6 +40,7 @@ var ChartGenerator = (function () {
    */
   function generateChartData(
     worksheetData,
+    chartTitle,
     chartType,
     chartGroupsJSON,
     workshopId
@@ -61,6 +63,7 @@ var ChartGenerator = (function () {
     // Initialize chart data structure
     const chartData = {
       type: chartType || CONSTANTS.DEFAULT_CHART_TYPE,
+      title: chartTitle || "",
       data: [],
     };
 

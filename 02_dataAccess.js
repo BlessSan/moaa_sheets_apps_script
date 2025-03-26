@@ -25,6 +25,7 @@ var DataAccess = (function () {
     COLUMNS: {
       WORKSHEET_NAME: "Worksheet Name",
       TYPE: "Type",
+      CHART_TITLE: "Chart Title",
       CHART_TYPE: "Chart Type",
       CHART_COLUMNS: "Chart Columns",
       CHART_GROUPS: "Chart Groups",
@@ -108,6 +109,7 @@ var DataAccess = (function () {
     // Find column indices
     const worksheetNameIdx = headers.indexOf(CONSTANTS.COLUMNS.WORKSHEET_NAME);
     const typeIdx = headers.indexOf(CONSTANTS.COLUMNS.TYPE);
+    const chartTitleIdx = headers.indexOf(CONSTANTS.COLUMNS.CHART_TITLE);
     const chartTypeIdx = headers.indexOf(CONSTANTS.COLUMNS.CHART_TYPE);
     const chartColumnsIdx = headers.indexOf(CONSTANTS.COLUMNS.CHART_COLUMNS);
     const chartGroupsIdx = headers.indexOf(CONSTANTS.COLUMNS.CHART_GROUPS);
@@ -128,6 +130,7 @@ var DataAccess = (function () {
       };
 
       // Add optional properties if columns exist
+      if (chartTitleIdx !== -1) worksheet.chartTitle = row[chartTitleIdx];
       if (chartTypeIdx !== -1) worksheet.chartType = row[chartTypeIdx];
       if (chartColumnsIdx !== -1) worksheet.chartColumns = row[chartColumnsIdx];
       if (chartGroupsIdx !== -1) worksheet.chartGroups = row[chartGroupsIdx];
