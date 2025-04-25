@@ -145,27 +145,48 @@ var ChartGenerator = (function () {
         const extractedAggregateValue = Utils.extractCustomFormatValue(
           aggregateRow[columns[0]]
         );
-        const extractedWorkshopValue = Utils.extractCustomFormatValue(
-          workshopData[columns[0]]
-        );
-        if (
-          extractedAggregateValue !== null &&
-          extractedWorkshopValue !== null
-        ) {
-          // add Others category
-          columns.push("Others");
-          const aggregateRemainder = getRemainderValue(extractedAggregateValue);
-          const workshopRemainder = getRemainderValue(extractedWorkshopValue);
+        // For aggregate-only mode, only process aggregate data
+        if (isAggregateOnly) {
+          if (extractedAggregateValue !== null) {
+            // Add Others category for aggregate data only
+            columns.push("Others");
+            const aggregateRemainder = getRemainderValue(
+              extractedAggregateValue
+            );
 
-          groupData.datasets[0].data.push(aggregateRemainder.x);
-          groupData.datasets[0].customLabels.push(
-            `${aggregateRemainder.x} (${aggregateRemainder.y}%)`
+            groupData.datasets[0].data.push(aggregateRemainder.x);
+            groupData.datasets[0].customLabels.push(
+              `${aggregateRemainder.x} (${aggregateRemainder.y}%)`
+            );
+          }
+        }
+        // For comparison mode (with workshop data)
+        else {
+          const extractedWorkshopValue = Utils.extractCustomFormatValue(
+            workshopData[columns[0]]
           );
 
-          groupData.datasets[1].data.push(workshopRemainder.x);
-          groupData.datasets[1].customLabels.push(
-            `${workshopRemainder.x} (${workshopRemainder.y}%)`
-          );
+          if (
+            extractedAggregateValue !== null &&
+            extractedWorkshopValue !== null
+          ) {
+            // Add Others category
+            columns.push("Others");
+            const aggregateRemainder = getRemainderValue(
+              extractedAggregateValue
+            );
+            const workshopRemainder = getRemainderValue(extractedWorkshopValue);
+
+            groupData.datasets[0].data.push(aggregateRemainder.x);
+            groupData.datasets[0].customLabels.push(
+              `${aggregateRemainder.x} (${aggregateRemainder.y}%)`
+            );
+
+            groupData.datasets[1].data.push(workshopRemainder.x);
+            groupData.datasets[1].customLabels.push(
+              `${workshopRemainder.x} (${workshopRemainder.y}%)`
+            );
+          }
         }
       }
 
