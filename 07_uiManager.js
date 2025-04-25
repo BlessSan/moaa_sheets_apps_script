@@ -1,5 +1,5 @@
 /**
- * UI Manager Module for MOAA Chart Tools
+ * UI Manager Module for MOAA Column Selector
  *
  * Purpose: Handles user interface interactions and sheet UI updates
  *

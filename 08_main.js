@@ -1,5 +1,5 @@
 /**
- * Main Module for MOAA Chart Tools
+ * Main Module for MOAA dashboard
  *
  * Purpose: Entry point for HTTP requests and application initialization
  *

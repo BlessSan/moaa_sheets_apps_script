@@ -1,5 +1,5 @@
 /**
- * Configuration Manager Module for MOAA Chart Tools
+ * Configuration Manager Module for MOAA dashboard
  *
  * Purpose: Handles storage and retrieval of application state and configuration
  *

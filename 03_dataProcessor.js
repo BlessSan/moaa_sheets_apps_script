@@ -1,5 +1,5 @@
 /**
- * Data Processing Module for MOAA Chart Tools
+ * Data Processing Module for MOAA dashboard
  *
  * Purpose: Handles transformation of raw spreadsheet data into structured formats
  *

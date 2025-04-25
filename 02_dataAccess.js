@@ -1,5 +1,5 @@
 /**
- * Data Access Module for MOAA Chart Tools
+ * Data Access Module for MOAA dashboard
  *
  * Purpose: Handles all direct interactions with Google Sheets
  *

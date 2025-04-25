@@ -1,5 +1,5 @@
 /**
- * Worksheet Service Module for MOAA Chart Tools
+ * Worksheet Service Module for MOAA dahsboard
  *
  * Purpose: Orchestrates worksheet data processing and chart generation
  *

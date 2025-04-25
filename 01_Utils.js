@@ -1,5 +1,5 @@
 /**
- * Utilities Module for MOAA Chart Tools
+ * Utilities Module for MOAA dashboard
  *
  * Purpose: Provides common helper functions for the application
  *
