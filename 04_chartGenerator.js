@@ -43,7 +43,8 @@ var ChartGenerator = (function () {
     chartTitle,
     chartType,
     chartGroupsJSON,
-    workshopId
+    workshopId,
+    isAggregateOnly = false
   ) {
     // Validate inputs
     if (!worksheetData || !chartGroupsJSON) {
@@ -81,43 +82,50 @@ var ChartGenerator = (function () {
       const columns = chartGroups[groupName];
       if (!columns || columns.length === 0) return;
 
-      // Create data structure for this group
+      // Create data structure for this group, where aggregate only is one dataset
       const groupData = {
         labels: columns, // Column names become labels
-        datasets: [
-          {
-            label: CONSTANTS.AGGREGATE_LABEL,
-            data: [],
-            customLabels: [],
-          },
-          {
-            label: workshopId,
-            data: [],
-            customLabels: [],
-          },
-        ],
+        datasets: isAggregateOnly
+          ? [
+              // For aggregate-only, create just one dataset
+              {
+                label: CONSTANTS.AGGREGATE_LABEL,
+                data: [],
+                customLabels: [],
+              },
+            ]
+          : [
+              // For comparison view, create two datasets
+              {
+                label: CONSTANTS.AGGREGATE_LABEL,
+                data: [],
+                customLabels: [],
+              },
+              {
+                label: workshopId,
+                data: [],
+                customLabels: [],
+              },
+            ],
       };
 
       // Extract data for each column
       columns.forEach(function (column) {
-        // Check if column exists in data sources
-        if (
-          aggregateRow.hasOwnProperty(column) &&
-          workshopData.hasOwnProperty(column)
-        ) {
+        if (aggregateRow.hasOwnProperty(column)) {
           // Add aggregate data
           const aggregateDataPoint = aggregateRow[column];
-          groupData.datasets[0].data.push(
-            Utils.extractNumericValue(aggregateDataPoint)
-          );
+          const aggregateValue = Utils.extractNumericValue(aggregateDataPoint);
+          groupData.datasets[0].data.push(aggregateValue);
           groupData.datasets[0].customLabels.push(aggregateDataPoint);
 
-          // Add workshop-specific data
-          const workshopDataPoint = workshopData[column];
-          groupData.datasets[1].data.push(
-            Utils.extractNumericValue(workshopDataPoint)
-          );
-          groupData.datasets[1].customLabels.push(workshopDataPoint);
+          // Add workshop-specific data only if not in aggregate-only mode
+          if (!isAggregateOnly && workshopData.hasOwnProperty(column)) {
+            const workshopDataPoint = workshopData[column];
+            groupData.datasets[1].data.push(
+              Utils.extractNumericValue(workshopDataPoint)
+            );
+            groupData.datasets[1].customLabels.push(workshopDataPoint);
+          }
         } else {
           // Push default value for missing columns
           groupData.datasets[0].data.push(CONSTANTS.FALLBACK_VALUE);

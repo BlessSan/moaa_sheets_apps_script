@@ -101,12 +101,15 @@ var WorksheetService = (function () {
       workshopId
     );
 
+    const isAggregateOnly = !workshopId;
+
     // Generate chart data if applicable
-    if (workshopId && worksheetConfig.chartGroups) {
+    if (worksheetConfig.chartGroups) {
       const chartData = prepareChartDataForWorksheet(
         processedData,
         worksheetConfig,
-        workshopId
+        workshopId,
+        isAggregateOnly
       );
 
       if (chartData) {
@@ -127,7 +130,8 @@ var WorksheetService = (function () {
   function prepareChartDataForWorksheet(
     processedData,
     worksheetConfig,
-    workshopId
+    workshopId,
+    isAggregateOnly = false
   ) {
     const chartType = worksheetConfig.chartType || CONSTANTS.DEFAULT_CHART_TYPE;
     const chartGroups = worksheetConfig.chartGroups;
@@ -142,7 +146,8 @@ var WorksheetService = (function () {
       chartTitle,
       chartType,
       chartGroups,
-      workshopId
+      workshopId || "Aggregate",
+      isAggregateOnly
     );
   }
 
